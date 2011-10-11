@@ -1,0 +1,65 @@
+module MIPSConst where
+
+special = 0x00 :: Int
+regimm  = 0x00 :: Int
+jOp     = 0x00 :: Int
+jalOp   = 0x00 :: Int
+beqOp   = 0x00 :: Int
+bneOp   = 0x00 :: Int
+blezOp  = 0x00 :: Int
+bgtzOp  = 0x00 :: Int
+addiOp  = 0x00 :: Int
+addiuOp = 0x00 :: Int
+sltiOp  = 0x00 :: Int
+sltiuOp = 0x00 :: Int
+andiOp  = 0x00 :: Int
+oriOp   = 0x00 :: Int
+xoriOp  = 0x00 :: Int
+luiOp   = 0x00 :: Int
+lbOp    = 0x20 :: Int
+lhOp    = 0x20 :: Int
+lwlOp   = 0x20 :: Int
+lwOp    = 0x20 :: Int
+lbuOp   = 0x20 :: Int
+lhuOp   = 0x20 :: Int
+lwrOp   = 0x20 :: Int
+sbOp    = 0x20 :: Int
+shOp    = 0x20 :: Int
+swOp    = 0x20 :: Int
+swlOp   = 0x20 :: Int
+swrOp   = 0x20 :: Int
+
+sllFunc     = 0x00 :: Int 
+bgezFunc    = 0x01 :: Int
+srlFunc     = 0x02 :: Int
+sraFunc     = 0x03 :: Int
+sllvFunc    = 0x04 :: Int
+jalrFunc    = 0x05 :: Int
+srlvFunc    = 0x06 :: Int
+sravFunc    = 0x07 :: Int
+jrFunc      = 0x08 :: Int
+syscallFunc = 0x0C :: Int
+breakFunc   = 0x0D :: Int
+mfhiFunc    = 0x10 :: Int
+mthiFunc    = 0x11 :: Int
+mfloFunc    = 0x12 :: Int
+mtloFunc    = 0x13 :: Int
+multFunc    = 0x18 :: Int
+multuFunc   = 0x19 :: Int
+divFunc     = 0x1A :: Int
+divuFunc    = 0x1B :: Int
+addFunc     = 0x20 :: Int
+adduFunc    = 0x21 :: Int
+subFunc     = 0x22 :: Int
+subuFunc    = 0x23 :: Int
+andFunc     = 0x24 :: Int
+orFunc      = 0x25 :: Int
+xorFunc     = 0x26 :: Int
+norFunc     = 0x27 :: Int
+sltFunc     = 0x2A :: Int
+sltuFunc    = 0x2B :: Int
+
+bltzFunc    = 0x00 :: Int
+bltzalFunc  = 0x10 :: Int
+bgezalFunc  = 0x11 :: Int
+
