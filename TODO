@@ -1,0 +1,8 @@
+align
+la pseudo-instruction / macros?
+word, half
+space
+binary literals
+bss sections/variable declarations
+ascii/asciiz
+bad arguments
