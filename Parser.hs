@@ -5,7 +5,7 @@ import Text.Parsec.Error (Message(SysUnExpect, UnExpect, Expect, Message),
                           errorPos, errorMessages)
 import Text.ParserCombinators.Parsec (Parser, ParseError, sourceColumn)
 import Text.ParserCombinators.Parsec.Char (alphaNum, anyChar, char, digit,
-                                           hexDigit, letter, satisfy, 
+                                           hexDigit, letter, oneOf, satisfy, 
                                            spaces, string)
 import Text.ParserCombinators.Parsec.Combinator (between, eof, many1, option,
                                                  optional, sepBy)
@@ -111,12 +111,12 @@ offsetBase = do n <- option "0" num
 
 num = try (string "0x" >> many1 hexDigit >>= (\n -> return $ "0x" ++ n)) 
   <|> (many1 digit)
+  <|> (char '%' >> many1 (oneOf "01"))
 
 parseInt :: Monad m => String -> m Int
 parseInt str = case parses num str of
   False -> fail $ "Error parsing number '" ++ str ++ "'"
   True  -> readNum str
-
 
 prettyParseError :: String -> ParseError -> String
 prettyParseError msg err =

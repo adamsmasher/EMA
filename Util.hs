@@ -3,18 +3,22 @@ module Util where
 import Data.Bits ((.&.), shiftR)
 import Data.Char (isSpace, toLower)
 import Data.Word (Word8)
-import Numeric (readDec, readHex)
+import Numeric (readDec, readHex, readInt)
 
 readNum :: Monad m => String -> m Int
 readNum = readNum' . (map toLower)
 readNum' ('0':'x':rest) = readNum'' readHex rest
+readNum' ('%':rest)     = readNum'' readBin rest
 readNum' str            = readNum'' readDec str
 readNum'' reader str = case reader str of
   [] -> fail "readNum on empty string"
   ((n,""):[])  -> return n
   ((n,bad):[]) -> fail $ "unexpected " ++ bad
 
-readBin = undefined
+readBin = readInt 2 (\c -> c == '0' || c == '1')
+                    (\c -> case c of
+                      '0' -> 0
+                      '1' -> 1) 
 
 trimLeft :: String -> String
 trimLeft = dropWhile isSpace
