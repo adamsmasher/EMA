@@ -20,6 +20,8 @@ type Opcode = Int
 type FuncCode = Int
 
 byteSize x | ".byte" `isPrefixOf` x = 1
+byteSize x | ".half" `isPrefixOf` x = 2
+byteSize x | ".word" `isPrefixOf` x = 4
 byteSize x = 4
 
 assemble :: Bytecode -> [Word8]

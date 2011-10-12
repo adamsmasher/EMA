@@ -12,7 +12,7 @@ import Text.ParserCombinators.Parsec.Combinator (between, eof, many1, option,
 import Text.ParserCombinators.Parsec.Prim ((<|>), many, parse, try)
 import Util (readNum)
 
-data ConstType = Byte [String] deriving Show
+data ConstType = Byte [String] | Half [String] | Word [String] deriving Show
 data Include = Incsrc String | Incbin String deriving Show
 data Line = Line String [String] deriving Show
 
@@ -41,12 +41,17 @@ label = do first <- letter <|> char '_'
            restLine <- many anyChar
            return $ (first:restLabel, restLine)
 
-constDirective = do string ".byte "
+constDirective = do char '.'
+                    size <- string "byte" <|> string "half" <|> string "word"
                     spaces
                     args <- argList
                     spaces
                     eof
-                    return $ Byte args
+                    return $ constOf size args
+
+constOf "byte" = Byte
+constOf "half" = Half
+constOf "word" = Word
 
 
 parseSectionHeader :: Monad m => String -> m Int
