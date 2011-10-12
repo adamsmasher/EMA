@@ -14,7 +14,7 @@ import SymTable (SymbolTable, buildSymbolTable)
 import Util (readNum, trimLeft, w16, w32)
 
 import Control.Arrow ((>>>))
-import Control.Monad (MonadPlus, liftM)
+import Control.Monad (liftM)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as ByteString (pack, readFile, unpack)
 import Data.Char (isDigit, toLower)
@@ -28,7 +28,7 @@ instance Monad AssemblyState where
   (Error a) >>= _ = Error a
   (OK b) >>= k = k b
   fail = Error
-
+   
 loadFile :: String -> IO [String]
 loadFile str = readFile str >>= (return . cleanupFile) >>= doIncludes
 
@@ -50,7 +50,7 @@ incBin file = ByteString.readFile file
 
 -- given the text of a file, assembleFile converts it to an
 -- assembled binary
-assembleFile :: MonadPlus m => [String] -> m ByteString
+assembleFile :: Monad m => [String] -> m ByteString
 assembleFile src = do ss <- sections src
                       let (ss', syms) = symTables ss
                       let symbolTable = concat syms
@@ -64,7 +64,7 @@ symTables ss = unzip $ (flip map) ss (\(Section start lines) ->
   let (lines', symTable) = buildSymbolTable start lines in
   (Section start lines', symTable))
 
-assembleSection :: MonadPlus m => SymbolTable -> Section -> m [Word8]
+assembleSection :: Monad m => SymbolTable -> Section -> m [Word8]
 assembleSection symbolTable (Section start body) = assembleSection' start body
   where assembleSection' _ [] = return []
         assembleSection' addr (x:xs) = do
@@ -91,7 +91,7 @@ stripComment = takeWhile (/='#')
 
 -- assembleLine takes a line of code and, if successful, assembles it into
 -- a binary word representing an instruction
-assembleLine :: MonadPlus m => SymbolTable -> Int -> String -> m [Word8]
+assembleLine :: Monad m => SymbolTable -> Int -> String -> m [Word8]
 assembleLine symbolTable addr str = case parse constDirective "" str of
   Left _ -> parseLine str >>=
             toInstruction symbolTable addr >>=

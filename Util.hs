@@ -26,23 +26,26 @@ showHex n = showIntAtBase 16 intToDigit n "0x"
 trimLeft :: String -> String
 trimLeft = dropWhile isSpace
 
-w8 :: MonadPlus m => Int -> m Word8
-w8 n = do guard (n < 256 && n >= -128)
-          return $ fromIntegral n
+w8 :: Monad m => Int -> m Word8
+w8 n | n >= 2^8 || n < -(2^7) =
+  fail $ "byte constant " ++ (show n) ++ " cannot fit in a byte"
+w8 n = return $ fromIntegral n
 
-w16 :: MonadPlus m => Int -> m [Word8]
+w16 :: Monad m => Int -> m [Word8]
+w16 n | n >= 2^16 || n < -(2^15) =
+  fail $ "halfword constant " ++ (show n) ++ " cannot fit in a halfword"
 w16 n = do
   high <- w8 $ n `shiftR` 8
   low  <- w8 $ n .&. 0x00FF 
-  guard (n < 65536 && n >= -32768)
   return [high, low]
 
-w32 :: MonadPlus m => Int -> m [Word8]
+w32 :: Monad m => Int -> m [Word8]
+w32 n | n >= 2^32 || n < -(2^31) =
+  fail $ "word constant " ++ (show n) ++ " cannot fit in a word"
 w32 n = do
   high <- w8 $ n `shiftR` 24
   m1   <- w8 $ (n .&. 0x00FF0000) `shiftR` 16
   m2   <- w8 $ (n .&. 0x0000FF00) `shiftR` 8
   low  <- w8 $ n .&. 0x000000FF
-  guard (n < 0xFFFFFFFF && n >= -(2^32))
   return [high, m1, m2, low]
 
