@@ -2,7 +2,7 @@
 
 module Ema where
 
-import Assembler (Bytecode(..), assemble, byteSize)
+import Assembler (Bytecode, assemble, byteSize, makeI, makeJ, makeR)
 import Expr (evalExpr)
 import MIPSConst
 import Parser (ConstType(..), Include(..), Line(..), constDirective, include,
@@ -14,7 +14,7 @@ import SymTable (SymbolTable, buildSymbolTable)
 import Util (readNum, trimLeft, w16, w32)
 
 import Control.Arrow ((>>>))
-import Control.Monad (liftM)
+import Control.Monad (MonadPlus, liftM)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as ByteString (pack, readFile, unpack)
 import Data.Char (isDigit, toLower)
@@ -50,7 +50,7 @@ incBin file = ByteString.readFile file
 
 -- given the text of a file, assembleFile converts it to an
 -- assembled binary
-assembleFile :: Monad m => [String] -> m ByteString
+assembleFile :: MonadPlus m => [String] -> m ByteString
 assembleFile src = do ss <- sections src
                       let (ss', syms) = symTables ss
                       let symbolTable = concat syms
@@ -64,7 +64,7 @@ symTables ss = unzip $ (flip map) ss (\(Section start lines) ->
   let (lines', symTable) = buildSymbolTable start lines in
   (Section start lines', symTable))
 
-assembleSection :: Monad m => SymbolTable -> Section -> m [Word8]
+assembleSection :: MonadPlus m => SymbolTable -> Section -> m [Word8]
 assembleSection symbolTable (Section start body) = assembleSection' start body
   where assembleSection' _ [] = return []
         assembleSection' addr (x:xs) = do
@@ -91,7 +91,7 @@ stripComment = takeWhile (/='#')
 
 -- assembleLine takes a line of code and, if successful, assembles it into
 -- a binary word representing an instruction
-assembleLine :: Monad m => SymbolTable -> Int -> String -> m [Word8]
+assembleLine :: MonadPlus m => SymbolTable -> Int -> String -> m [Word8]
 assembleLine symbolTable addr str = case parse constDirective "" str of
   Left _ -> parseLine str >>=
             toInstruction symbolTable addr >>=
@@ -99,9 +99,9 @@ assembleLine symbolTable addr str = case parse constDirective "" str of
   Right (Byte bytes) -> mapM readNum bytes >>=
                         return . (map fromIntegral)
   Right (Half hws)   -> mapM readNum hws >>=
-                        return . concatMap (reverse . w16) . map fromIntegral
+                        liftM concat . mapM (liftM reverse . w16) . map fromIntegral
   Right (Word words) -> mapM readNum words >>=
-                        return . concatMap (reverse . w32) . map fromIntegral
+                        liftM concat . mapM (liftM reverse . w32) . map fromIntegral
 
 toInstruction :: Monad m => SymbolTable -> Int -> Line -> m Bytecode
 toInstruction symbolTable addr l = case l of
@@ -109,242 +109,241 @@ toInstruction symbolTable addr l = case l of
     (r1:r2:r3:[]) -> do rd <- parseRegister r1
                         rs <- parseRegister r2
                         rt <- parseRegister r3
-                        return $ RInstruction 0 rs rt rd 0 addFunc
+                        makeR 0 rs rt rd 0 addFunc
     _             -> fail "Incorrect number of arguments to 'add'"
   Line "addi"   params -> case params of
     (r1:r2:imm:[]) -> do rt <- parseRegister r1
                          rs <- parseRegister r2
                          n  <- eval imm
-                         return $ IInstruction addiOp rs rt n
+                         makeI addiOp rs rt n
   Line "addiu"  params -> case params of
     (r1:r2:imm:[]) -> do rt <- parseRegister r1
                          rs <- parseRegister r2
                          n  <- eval imm
-                         return $ IInstruction addiuOp rs rt n
+                         makeI addiuOp rs rt n
   Line "addu"   params -> case params of
     (r1:r2:r3:[]) -> do rd <- parseRegister r1
                         rs <- parseRegister r2
                         rt <- parseRegister r3
-                        return $ RInstruction 0 rs rt rd 0 adduFunc
+                        makeR 0 rs rt rd 0 adduFunc
   Line "and"    params -> case params of
     (r1:r2:r3:[]) -> do rd <- parseRegister r1
                         rs <- parseRegister r2
                         rt <- parseRegister r3
-                        return $ RInstruction 0 rs rt rd 0 andFunc
+                        makeR 0 rs rt rd 0 andFunc
   Line "andi"   params -> case params of
     (r1:r2:imm:[]) -> do rt <- parseRegister r1
                          rs <- parseRegister r2
                          n  <- eval imm
-                         return $ IInstruction andiOp rs rt n
+                         makeI andiOp rs rt n
   Line "beq"    params -> case params of
     (r1:r2:off:[]) -> do rs <- parseRegister r1
                          rt <- parseRegister r2
                          n  <- eval off
-                         return $ IInstruction beqOp rs rt (n - (addr+4))
+                         makeI beqOp rs rt (n - (addr+4))
   Line "bgez"   params -> case params of
     (r:off:[]) -> do rs <- parseRegister r
                      n  <- eval off
-                     return $ IInstruction regimm rs bgezFunc (n - (addr+4))
+                     makeI regimm rs bgezFunc (n - (addr+4))
   Line "bgezal" params -> case params of
     (r:off:[]) -> do rs <- parseRegister r
                      n  <- eval off
-                     return $ IInstruction regimm rs bgezalFunc (n - (addr+4))
+                     makeI regimm rs bgezalFunc (n - (addr+4))
   Line "bgtz"   params -> case params of
     (r:off:[]) -> do rs <- parseRegister r
                      n  <- eval off
-                     return $ IInstruction bgtzOp rs 0 (n - (addr+4))
+                     makeI bgtzOp rs 0 (n - (addr+4))
   Line "blez"   params -> case params of
     (r:off:[]) -> do rs <- parseRegister r
                      n  <- eval off
-                     return $ IInstruction blezOp rs 0 (n - (addr+4))
+                     makeI blezOp rs 0 (n - (addr+4))
   Line "bltz"   params -> case params of
     (r:off:[]) -> do rs <- parseRegister r
                      n  <- eval off
-                     return $ IInstruction regimm rs bltzFunc (n - (addr+4))
+                     makeI regimm rs bltzFunc (n - (addr+4))
   Line "bltzal" params -> case params of
     (r:off:[]) -> do rs <- parseRegister r
                      n  <- eval off
-                     return $ IInstruction regimm rs bltzalFunc (n - (addr+4))
+                     makeI regimm rs bltzalFunc (n - (addr+4))
   Line "bne"    params -> case params of
     (r1:r2:off:[]) -> do rs <- parseRegister r1
                          rt <- parseRegister r2
                          n  <- eval off
-                         return $ IInstruction bneOp rs rt (n - (addr+4))
+                         makeI bneOp rs rt (n - (addr+4))
   Line "div"    params -> case params of
     (r1:r2:[]) -> do rs <- parseRegister r1
                      rt <- parseRegister r2
-                     return $ RInstruction special rs rt 0 0 divFunc
+                     makeR special rs rt 0 0 divFunc
   Line "divu"   params -> case params of
     (r1:r2:[]) -> do rs <- parseRegister r1
                      rt <- parseRegister r2
-                     return $ RInstruction special rs rt 0 0 divuFunc
+                     makeR special rs rt 0 0 divuFunc
   Line "j"      params -> case params of
     (target:[]) -> do n <- eval target
-                      return $ JInstruction jOp n
+                      makeJ jOp n
   Line "jal"    params -> case params of
     (target:[]) -> do n <- eval target
-                      return $ JInstruction jalOp n
+                      makeJ jalOp n
   Line "jalr"   params -> case params of
     (r1:r2:[]) -> do rd <- parseRegister r1
                      rs <- parseRegister r2
-                     return $ RInstruction special rs 0 rd 0 jalrFunc
+                     makeR special rs 0 rd 0 jalrFunc
   Line "lb"     params -> case params of
     (r:offsetBase:[]) -> do rt <- parseRegister r
                             (off, base) <- parseOffsetBase offsetBase
-                            return $ IInstruction lbOp base rt off
+                            makeI lbOp base rt off
   Line "lbu"    params -> case params of
     (r:offsetBase:[]) -> do rt <- parseRegister r
                             (off, base) <- parseOffsetBase offsetBase
-                            return $ IInstruction lbuOp base rt off
+                            makeI lbuOp base rt off
   Line "lh"     params -> case params of
     (r:offsetBase:[]) -> do rt <- parseRegister r
                             (off, base) <- parseOffsetBase offsetBase
-                            return $ IInstruction lhOp base rt off
+                            makeI lhOp base rt off
   Line "lhu"    params -> case params of
     (r:offsetBase:[]) -> do rt <- parseRegister r
                             (off, base) <- parseOffsetBase offsetBase
-                            return $ IInstruction lhuOp base rt off
+                            makeI lhuOp base rt off
   Line "lui"    params -> case params of
     (r:imm:[]) -> do rt <- parseRegister r
                      n <- eval imm
-                     return $ IInstruction luiOp 0 rt n
+                     makeI luiOp 0 rt n
   Line "lw"     params -> case params of
     (r:offsetBase:[]) -> do rt <- parseRegister r
                             (off, base) <- parseOffsetBase offsetBase
-                            return $ IInstruction lwOp base rt off 
+                            makeI lwOp base rt off 
   Line "lwl"    params -> case params of
     (r:offsetBase:[]) -> do rt <- parseRegister r
                             (off, base) <- parseOffsetBase offsetBase
-                            return $ IInstruction lwlOp base rt off
+                            makeI lwlOp base rt off
   Line "lwr"    params -> case params of
     (r:offsetBase:[]) -> do rt <- parseRegister r
                             (off, base) <- parseOffsetBase offsetBase
-                            return $ IInstruction lwrOp base rt off
+                            makeI lwrOp base rt off
   Line "mfhi"   params -> case params of
     (r:[]) -> do rd <- parseRegister r
-                 return $ RInstruction special 0 0 rd 0 mfhiFunc
+                 makeR special 0 0 rd 0 mfhiFunc
   Line "mflo"   params -> case params of
     (r:[]) -> do rd <- parseRegister r
-                 return $ RInstruction special 0 0 rd 0 mfloFunc
+                 makeR special 0 0 rd 0 mfloFunc
   Line "mthi"   params -> case params of
     (r:[]) -> do rs <- parseRegister r
-                 return $ RInstruction special rs 0 0 0 mthiFunc
+                 makeR special rs 0 0 0 mthiFunc
   Line "mtlo"   params -> case params of
     (r:[]) -> do rs <- parseRegister r
-                 return $ RInstruction special rs 0 0 0 mtloFunc
+                 makeR special rs 0 0 0 mtloFunc
   Line "mult"   params -> case params of
     (r1:r2:[]) -> do rs <- parseRegister r1
                      rt <- parseRegister r2
-                     return $ RInstruction special rs rt 0 0 multFunc
+                     makeR special rs rt 0 0 multFunc
   Line "multu"  params -> case params of
     (r1:r2:[]) -> do rs <- parseRegister r1
                      rt <- parseRegister r2
-                     return $ RInstruction special rs rt 0 0 multuFunc
+                     makeR special rs rt 0 0 multuFunc
   Line "nor"    params -> case params of
     (r1:r2:r3:[]) -> do rd <- parseRegister r1
                         rs <- parseRegister r2
                         rt <- parseRegister r3
-                        return $ RInstruction special rs rt rd 0 norFunc
+                        makeR special rs rt rd 0 norFunc
   Line "or"     params -> case params of
     (r1:r2:r3:[]) -> do rd <- parseRegister r1
                         rs <- parseRegister r2
                         rt <- parseRegister r3
-                        return $ RInstruction special rs rt rd 0 orFunc
+                        makeR special rs rt rd 0 orFunc
   Line "ori"    params -> case params of
     (r1:r2:imm:[]) -> do rt <- parseRegister r1
                          rs <- parseRegister r2
                          n  <- eval imm
-                         return $ IInstruction oriOp rs rt n
+                         makeI oriOp rs rt n
   Line "sb"     params -> case params of
     (r:offsetBase:[]) -> do rt <- parseRegister r
                             (off, base) <- parseOffsetBase offsetBase
-                            return $ IInstruction sbOp base rt off
+                            makeI sbOp base rt off
   Line "sh"     params -> case params of
     (r:offsetBase:[]) -> do rt <- parseRegister r
                             (off, base) <- parseOffsetBase offsetBase
-                            return $ IInstruction shOp base rt off
+                            makeI shOp base rt off
   Line "sll"    params -> case params of
     (r1:r2:sa:[]) -> do rd <- parseRegister r1
                         rt <- parseRegister r2
                         n  <- eval sa
-                        return $ RInstruction special 0 rt rd n sllFunc
+                        makeR special 0 rt rd n sllFunc
   Line "sllv"   params -> case params of
     (r1:r2:r3:[]) -> do rd <- parseRegister r1
                         rt <- parseRegister r2
                         rs <- parseRegister r3
-                        return $ RInstruction special rs rt rd 0 sllvFunc
+                        makeR special rs rt rd 0 sllvFunc
   Line "slt"    params -> case params of
     (r1:r2:r3:[]) -> do rd <- parseRegister r1
                         rs <- parseRegister r2
                         rt <- parseRegister r3
-                        return $ RInstruction special rs rt rd 0 sltFunc
+                        makeR special rs rt rd 0 sltFunc
   Line "slti"   params -> case params of
     (r1:r2:imm:[]) -> do rt <- parseRegister r1
                          rs <- parseRegister r2
                          n  <- eval imm
-                         return $ IInstruction sltiOp rs rt n
+                         makeI sltiOp rs rt n
   Line "sltiu"  params -> case params of
     (r1:r2:imm:[]) -> do rt <- parseRegister r1
                          rs <- parseRegister r2
                          n  <- eval imm
-                         return $ IInstruction sltiuOp rs rt n
+                         makeI sltiuOp rs rt n
   Line "sltu"   params -> case params of
     (r1:r2:r3:[]) -> do rd <- parseRegister r1
                         rs <- parseRegister r2
                         rt <- parseRegister r3
-                        return $ RInstruction special rs rt rd 0 sltuFunc
+                        makeR special rs rt rd 0 sltuFunc
   Line "sra"    params -> case params of
     (r1:r2:sa:[]) -> do rd <- parseRegister r1
                         rt <- parseRegister r2
                         n  <- eval sa
-                        return $ RInstruction special 0 rt rd n sraFunc
+                        makeR special 0 rt rd n sraFunc
   Line "srav"   params -> case params of
     (r1:r2:r3:[]) -> do rd <- parseRegister r1
                         rt <- parseRegister r2
                         rs <- parseRegister r3
-                        return $ RInstruction special rs rt rd 0 sravFunc
+                        makeR special rs rt rd 0 sravFunc
   Line "srl"    params -> case params of
     (r1:r2:sa:[]) -> do rd <- parseRegister r1
                         rt <- parseRegister r2
                         n  <- eval sa
-                        return $ RInstruction special 0 rt rd n srlFunc
+                        makeR special 0 rt rd n srlFunc
   Line "srlv"   params -> case params of
     (r1:r2:r3:[]) -> do rd <- parseRegister r1
                         rt <- parseRegister r2
                         rs <- parseRegister r3
-                        return $ RInstruction special rs rt rd 0 srlvFunc
+                        makeR special rs rt rd 0 srlvFunc
   Line "sub"    params -> case params of
     (r1:r2:r3:[]) -> do rd <- parseRegister r1
                         rs <- parseRegister r2
                         rt <- parseRegister r3
-                        return $ RInstruction special rs rt rd 0 subFunc
+                        makeR special rs rt rd 0 subFunc
   Line "subu"   params -> case params of
     (r1:r2:r3:[]) -> do rd <- parseRegister r1
                         rs <- parseRegister r2
                         rt <- parseRegister r3
-                        return $ RInstruction special rs rt rd 0 subuFunc
+                        makeR special rs rt rd 0 subuFunc
   Line "sw"     params -> case params of
     (r:offsetBase:[]) -> do rt <- parseRegister r
                             (off, base) <- parseOffsetBase offsetBase
-                            return $ IInstruction swOp base rt off
+                            makeI swOp base rt off
   Line "swl"    params -> case params of
     (r:offsetBase:[]) -> do rt <- parseRegister r
                             (off, base) <- parseOffsetBase offsetBase
-                            return $ IInstruction swlOp base rt off
+                            makeI swlOp base rt off
   Line "swr"    params -> case params of
     (r:offsetBase:[]) -> do rt <- parseRegister r
                             (off, base) <- parseOffsetBase offsetBase
-                            return $ IInstruction swrOp base rt off
+                            makeI swrOp base rt off
   Line "xor"    params -> case params of
     (r1:r2:r3:[]) -> do rd <- parseRegister r1
                         rs <- parseRegister r2
                         rt <- parseRegister r3
-                        return $ RInstruction special rs rt rd 0 xorFunc
+                        makeR special rs rt rd 0 xorFunc
   Line "xori"   params -> case params of
     (r1:r2:imm:[]) -> do rs <- parseRegister r1
                          rt <- parseRegister r2
                          n  <- eval imm
-                         return $ IInstruction xoriOp rs rt n
+                         makeI xoriOp rs rt n
   Line i _         -> fail $ "unknown instruction " ++ i
   where eval = evalExpr symbolTable
-

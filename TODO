@@ -6,7 +6,6 @@ bss sections/variable declarations
 ascii/asciiz
 bad arguments
 full exprs?
-check size on const nums
 
 v2
 abstract notion of a 'pass'
