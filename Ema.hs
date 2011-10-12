@@ -11,7 +11,7 @@ import Parser (ConstType(..), Include(..), Line(..), constDirective, include,
 import Register
 import Section (Section(..), sections)
 import SymTable (SymbolTable, buildSymbolTable)
-import Util (readNum, trimLeft)
+import Util (readNum, trimLeft, w16, w32)
 
 import Control.Arrow ((>>>))
 import Control.Monad (liftM)
@@ -98,6 +98,10 @@ assembleLine symbolTable addr str = case parse constDirective "" str of
             return . assemble
   Right (Byte bytes) -> mapM readNum bytes >>=
                         return . (map fromIntegral)
+  Right (Half hws)   -> mapM readNum hws >>=
+                        return . concatMap (reverse . w16) . map fromIntegral
+  Right (Word words) -> mapM readNum words >>=
+                        return . concatMap (reverse . w32) . map fromIntegral
 
 toInstruction :: Monad m => SymbolTable -> Int -> Line -> m Bytecode
 toInstruction symbolTable addr l = case l of
