@@ -52,26 +52,19 @@ incBin file = ByteString.readFile file
 -- assembled binary
 assembleFile :: Monad m => [String] -> m ByteString
 assembleFile src = do ss <- sections src
-                      let (ss', syms) = symTables ss
-                      let symbolTable = concat syms
-                      assembledSections <- sequence $
-                        map (assembleSection symbolTable) ss'
-                      return $ ByteString.pack $ concat assembledSections
+                      let (ls, syms) = symTables ss
+                      let (ls', symbolTable) = (concat ls, concat syms)
+                      bytes <- assembleLines symbolTable ls'
+                      return $ ByteString.pack $ bytes
 
 -- silly little helper
-symTables :: [Section] -> ([Section], [SymbolTable])
+symTables :: [Section] -> ([[(Int, String)]], [SymbolTable])
 symTables ss = unzip $ (flip map) ss (\(Section start lines) ->
-  let (lines', symTable) = buildSymbolTable start lines in
-  (Section start lines', symTable))
+  buildSymbolTable start lines)
 
-assembleSection :: Monad m => SymbolTable -> Section -> m [Word8]
-assembleSection symbolTable (Section start body) = assembleSection' start body
-  where assembleSection' _ [] = return []
-        assembleSection' addr (x:xs) = do
-          bin <- asm addr x
-          rest <- assembleSection' (addr+(byteSize x)) xs
-          return $ bin ++ rest
-        asm = assembleLine symbolTable
+assembleLines :: Monad m => SymbolTable -> [(Int, String)] -> m [Word8]
+assembleLines symbolTable ls = liftM concat $ sequence $ map asm ls
+  where asm = assembleLine symbolTable
 
 -- splits a file up into lines, removes leading whitespace, comments, and empty
 -- lines
@@ -91,8 +84,8 @@ stripComment = takeWhile (/='#')
 
 -- assembleLine takes a line of code and, if successful, assembles it into
 -- a binary word representing an instruction
-assembleLine :: Monad m => SymbolTable -> Int -> String -> m [Word8]
-assembleLine symbolTable addr str = case parse constDirective "" str of
+assembleLine :: Monad m => SymbolTable -> (Int, String) -> m [Word8]
+assembleLine symbolTable (addr, str) = case parse constDirective "" str of
   Left _ -> parseLine str >>=
             toInstruction symbolTable addr >>=
             return . assemble
