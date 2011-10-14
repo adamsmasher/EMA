@@ -1,5 +1,21 @@
 v1
-align
+
+split cleanly into three passes:
+
+pass 1 (macro extraction)
+create a set of macros
+
+pass 2 (analysis)
+create symbol table
+set addresses
+expand macros
+remove sections, turn into a stream of code
+
+pass 3 (code generation):
+generate code
+
+
+align and alignment issues
 macros
 space
 bss sections/variable declarations
@@ -8,7 +24,7 @@ bad arguments
 full exprs?
 
 v2
-abstract notion of a 'pass'
 auto-alignment on constants, align 0 to disable
 variadic/poly-arity macros?
 poly-arity instructions?
+local labels
