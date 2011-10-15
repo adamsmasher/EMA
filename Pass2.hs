@@ -1,4 +1,4 @@
-module SymTable (SymbolTable, buildSymbolTable) where
+module Pass2 (SymbolTable, buildSymbolTable) where
 
 import Assembler (byteSize)
 import Control.Monad (msum)

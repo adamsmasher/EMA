@@ -2,18 +2,19 @@ v1
 
 split cleanly into three passes:
 
-pass 1 (macro extraction)
+pass 1
+expand includes
 create a set of macros
 
-pass 2 (analysis)
+pass 2
 create symbol table
 set addresses
 expand macros
 remove sections, turn into a stream of code
 
-pass 3 (code generation):
+pass 3
+evaluate expressions
 generate code
-
 
 align and alignment issues
 macros
@@ -22,6 +23,7 @@ bss sections/variable declarations
 ascii/asciiz
 bad arguments
 full exprs?
+report error on duplicate labels
 
 v2
 auto-alignment on constants, align 0 to disable

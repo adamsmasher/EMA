@@ -1,7 +1,7 @@
 module Expr (evalExpr) where
 
 import Parser (num, parseInt)
-import SymTable (SymbolTable(..))
+import Pass2 (SymbolTable)
 
 import Text.ParserCombinators.Parsec (parse)
 

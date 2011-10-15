@@ -8,9 +8,9 @@ import MIPSConst
 import Parser (ConstType(..), Include(..), Line(..), constDirective, include,
                label, num, parseInt, parseLine, parseOffsetBase, parseRegister,
                parses, stringLiteral)
+import Pass2 (SymbolTable, buildSymbolTable)
 import Register
 import Section (Section(..), sections)
-import SymTable (SymbolTable, buildSymbolTable)
 import Util (readNum, trimLeft, w16, w32)
 
 import Control.Arrow ((>>>))
