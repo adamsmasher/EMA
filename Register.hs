@@ -44,6 +44,4 @@ lookupRegisterName str
     "fp"   -> return 30
     "ra"   -> return 31
     _      -> fail $ str ++ " is not a valid register"
--- lookupRegisterName should never get "" strings, if the parse works right
-lookupRegisterName _ = error "Internal assembler error - lookupRegisterName"
 
