@@ -2,7 +2,7 @@ module Util where
 
 import Control.Monad
 import Data.Bits ((.&.), shiftR)
-import Data.Char (intToDigit, isSpace, toLower)
+import Data.Char (digitToInt, intToDigit, isSpace, toLower)
 import Data.Word (Word8)
 import Numeric (readDec, readHex, readInt, showIntAtBase)
 
@@ -16,10 +16,7 @@ readNum'' reader str = case reader str of
   ((n,""):[])  -> return n
   ((n,bad):[]) -> fail $ "unexpected " ++ bad
 
-readBin = readInt 2 (\c -> c == '0' || c == '1')
-                    (\c -> case c of
-                      '0' -> 0
-                      '1' -> 1) 
+readBin = readInt 2 (\c -> c == '0' || c == '1') digitToInt
 
 showHex n = showIntAtBase 16 intToDigit n "0x"
 

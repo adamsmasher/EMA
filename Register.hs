@@ -1,12 +1,13 @@
 module Register where
 
 import Data.Char (isDigit, toLower)
+import qualified Debug.Trace as Debug
 
 type RegInt = Int
 
 lookupRegisterName :: (Monad m) => String -> m Int
-lookupRegisterName (_:str)
-  | all isDigit str = case read str of
+lookupRegisterName str
+  | all isDigit str = case read (Debug.trace str str) of
       n | n > 31 -> fail "Invalid register number"
       n          -> return n
   | otherwise = case map toLower str of
