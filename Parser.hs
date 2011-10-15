@@ -3,17 +3,16 @@ module Parser where
 import Register (lookupRegisterName)
 import Util (readBin)
 
-import Control.Monad (liftM)
+import Data.Char(isSpace)
 import Data.Maybe (fromJust, maybeToList)
 import Numeric (readHex)
 import Text.Parsec.Error (Message(SysUnExpect, UnExpect, Expect, Message), 
                           errorPos, errorMessages)
 import Text.ParserCombinators.Parsec (Parser, ParseError, sourceColumn)
-import Text.ParserCombinators.Parsec.Char (alphaNum, anyChar, char, digit,
-                                           hexDigit, letter, oneOf, satisfy, 
-                                           spaces, string)
-import Text.ParserCombinators.Parsec.Combinator (between, eof, many1, option,
-                                                 optional, sepBy)
+import Text.ParserCombinators.Parsec.Char (alphaNum, char, digit, hexDigit,
+                                           letter, newline, oneOf, satisfy)
+import Text.ParserCombinators.Parsec.Combinator (between, many1, option,
+                                                 optionMaybe, sepBy)
 import Text.ParserCombinators.Parsec.Prim ((<|>), many, parse, try)
 
 data Line = Label String | CmdLine String [Expr] deriving Show
@@ -32,14 +31,19 @@ regNum _ = Nothing
 symbolString (Symbol s) = Just s
 symbolString _ = Nothing
 
-asmline = do spaces
-             l <- try (option Nothing (label >>= return . Just))
-             spaces
-             cmd <- try (option Nothing (cmdline >>= return . Just))
-             spaces
-             eof
+asmsrc = many asmline
+
+asmline = do whitespaces
+             l <- optionMaybe (try label)
+             whitespaces
+             cmd <- optionMaybe (try cmdline)
+             whitespaces
+             newline
              return $ (maybeToList l) ++ (maybeToList cmd)
              
+whitespace = satisfy (\c -> isSpace c && c /= '\n')
+whitespaces = many whitespace
+
 label :: Parser Line
 label = do first <- letter <|> char '_'
            restLabel <- many (alphaNum <|> char '_')
@@ -48,26 +52,26 @@ label = do first <- letter <|> char '_'
 
 cmdline :: Parser Line
 cmdline = do cmd <- symbol
-             spaces
+             whitespaces
              args <- argList
              return $ CmdLine (fromJust $ symbolString cmd) args
 
 argList :: Parser [Expr]
-argList = arg `sepBy` (char ',' >> spaces)
+argList = arg `sepBy` (char ',' >> whitespaces)
 
 arg = do a <- try offsetBase
                 <|> num
                 <|> (try symbol) 
                 <|> register 
-         spaces
+         whitespaces
          return a
 
 offsetBase :: Parser Expr
 offsetBase = do n <- option (Dec 0) num
                 char '('
-                spaces
+                whitespaces
                 r <- register
-                spaces
+                whitespaces
                 char ')'
                 return $ OffsetBase n (fromJust (regNum r))
 
