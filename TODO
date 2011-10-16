@@ -1,16 +1,18 @@
 v1
 
-macros
+EASY:
 space
-bss sections/variable declarations
 ascii/asciiz
+report error when word > 2^32?
+
+BIGGER:
+macros
+bss sections/variable declarations
 bad arguments
 full exprs?
-report error on duplicate labels
-report error when word > 2^32
 
 v2
-align 0
+align 0, I guess
 variadic/poly-arity macros?
 poly-arity instructions?
 local labels

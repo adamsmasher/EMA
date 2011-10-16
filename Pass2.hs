@@ -31,7 +31,9 @@ addLine l a = get >>= (\st -> case bstAddr st of
 
 addSymbol s = get >>= (\st -> case bstAddr st of
   Nothing   -> fail "FUCK YOU ASSHOLE"
-  Just addr -> put st { bstSymbols = (s, addr):(bstSymbols st) })
+  Just addr -> case lookup s (bstSymbols st) of
+    Nothing -> put st { bstSymbols = (s, addr):(bstSymbols st) }
+    Just _  -> fail $ "Duplicate symbol " ++ s)
 
 returnCurrentResults = do st <- get
                           return $ (reverse $ bstLines_acc st, bstSymbols st)
