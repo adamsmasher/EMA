@@ -1,8 +1,9 @@
-module Parser where
+module Parser (Line(..), Expr(..), parseFile) where
 
 import Register (lookupRegisterName)
 import Util (readBin)
 
+import Control.Arrow ((>>>))
 import Data.Char(isSpace)
 import Data.Maybe (fromJust, maybeToList)
 import Numeric (readHex)
@@ -15,6 +16,8 @@ import Text.ParserCombinators.Parsec.Combinator (between, many1, option,
                                                  optionMaybe, sepBy)
 import Text.ParserCombinators.Parsec.Prim ((<|>), many, parse, try)
 
+------ types -------------------------------------------------
+
 data Line = Label String | CmdLine String [Expr] deriving Show
 data Expr = Str String
           | Symbol String
@@ -25,11 +28,26 @@ data Expr = Str String
           | OffsetBase Expr Int
   deriving Show
 
+------ public -------------------------------------------------
+
+parseFile f str = parse asmsrc f (removeComments str) >>= return . concat
+
+------ utility -------------------------------------------------
+
+removeComments :: String -> String
+removeComments = lines >>> map stripComment >>> unlines
+
+-- comments begin with a #, carry on to end of line
+stripComment :: String -> String
+stripComment = takeWhile (/='#')
+
 regNum (Register n) = Just n
 regNum _ = Nothing
 
 symbolString (Symbol s) = Just s
 symbolString _ = Nothing
+
+------ parsers -------------------------------------------------
 
 asmsrc = many asmline
 

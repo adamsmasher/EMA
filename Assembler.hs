@@ -1,4 +1,4 @@
-module Assembler (Bytecode, assemble, byteSize, makeI, makeR, makeJ) where
+module Assembler (Bytecode, assemble, makeI, makeR, makeJ) where
 
 import Util (showHex, w8, w16, w32)
 import Register
@@ -31,11 +31,6 @@ type ShiftAmount = Int
 type Opcode = Int
 
 type FuncCode = Int
-
-byteSize x | ".byte" `isPrefixOf` x = 1
-byteSize x | ".half" `isPrefixOf` x = 2
-byteSize x | ".word" `isPrefixOf` x = 4
-byteSize x = 4
 
 assemble :: Bytecode -> [Word8]
 assemble (RInstruction op rs rt rd shamt funct) =
