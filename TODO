@@ -24,6 +24,7 @@ ascii/asciiz
 bad arguments
 full exprs?
 report error on duplicate labels
+report error when word > 2^32
 
 v2
 auto-alignment on constants, align 0 to disable

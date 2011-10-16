@@ -37,8 +37,6 @@ w16 n = do
   return [high, low]
 
 w32 :: Monad m => Int -> m [Word8]
-w32 n | n >= 2^32 || n < -(2^31) =
-  fail $ "word constant " ++ (show n) ++ " cannot fit in a word"
 w32 n = do
   high <- w8 $ n `shiftR` 24
   m1   <- w8 $ (n .&. 0x00FF0000) `shiftR` 16

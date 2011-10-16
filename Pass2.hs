@@ -51,12 +51,13 @@ doLine (CmdLine ".text" args) = case args of
   ((Bin n):[]) -> do newSection n
                      returnCurrentResults
   _            -> fail "Huge fucking screwup"
-doLine l@(CmdLine _ _) = do addLine l
-                            moveAhead (byteSize l)
-                            returnCurrentResults
+doLine l = do addLine l
+              moveAhead (byteSize l)
+              returnCurrentResults
+
 byteSize :: Line -> Int
 byteSize (Label _) = 0
 byteSize (CmdLine ".byte" args) = length args
 byteSize (CmdLine ".half" args) = length args * 2
 byteSize (CmdLine ".word" args) = length args * 4
-
+byteSize (CmdLine _ _)          = 4
