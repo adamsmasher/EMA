@@ -1,4 +1,4 @@
-module Parser (Line(..), Expr(..), parseFile) where
+module Parser (Line(..), Expr(..), NumType(..), parseFile) where
 
 import Register (lookupRegisterName)
 import Util (readBin)
@@ -22,11 +22,10 @@ data Line = Label String | CmdLine String [Expr] deriving Show
 data Expr = Str String
           | Symbol String
           | Register Int
-          | Hex Int
-          | Bin Int
-          | Dec Int
+          | Num NumType Int
           | OffsetBase Expr Int
   deriving Show
+data NumType = Hex | Dec | Bin deriving Show
 
 ------ public -------------------------------------------------
 
@@ -85,7 +84,7 @@ arg = do a <- try offsetBase
          return a
 
 offsetBase :: Parser Expr
-offsetBase = do n <- option (Dec 0) num
+offsetBase = do n <- option (Num Dec 0) num
                 char '('
                 whitespaces
                 r <- register
@@ -98,14 +97,14 @@ num = (try hex) <|> bin <|> dec
 hex = do char '0'
          char 'X' <|> char 'x'
          ds <- many1 hexDigit
-         return $ Hex (fst $ head (readHex ds))
+         return $ Num Hex (fst $ head (readHex ds))
 
 dec = do ds <- many1 digit
-         return $ Dec (read ds)
+         return $ Num Dec (read ds)
 
 bin = do char '%'
          ds <- many1 (oneOf "01")
-         return $ Bin (fst $ head (readBin ds))
+         return $ Num Bin (fst $ head (readBin ds))
 
 symbol :: Parser Expr
 symbol = do first <- letter <|> char '_' <|> char '.'

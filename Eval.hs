@@ -12,8 +12,6 @@ evalExpr symTable e = case e of
     Nothing -> fail $ "undefined symbol " ++ s
     Just v  -> return v
   Register _ -> fail "unexpected register"
-  Hex n -> return n
-  Bin n -> return n
-  Dec n -> return n
+  Num _ n -> return n
   OffsetBase _ _ -> fail "unexpected offset base pair"
    

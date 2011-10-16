@@ -3,7 +3,7 @@ module Ema where
 import Assembler (Bytecode, assemble, makeI, makeJ, makeR)
 import Eval (evalExpr)
 import MIPSConst
-import Parser (Line(..), Expr(..), parseFile)
+import Parser (Line(..), Expr(..), NumType(..), parseFile)
 import Pass2 (SymbolTable, buildSymbolTable)
 import Util (w16, w32)
 
@@ -43,7 +43,7 @@ doInclude line = case line of
 incBin :: String -> IO [Line]
 incBin file = ByteString.readFile file
           >>= return . ((map makeByte) . ByteString.unpack)
-              where makeByte n = CmdLine ".byte" [Dec $ fromIntegral n]
+              where makeByte n = CmdLine ".byte" [Num Dec $ fromIntegral n]
 
 -- given the text of a file, assembleFile converts it to an
 -- assembled binary

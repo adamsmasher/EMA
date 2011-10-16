@@ -20,9 +20,14 @@ moveAhead n = get >>= (\st -> case bstAddr st of
   Nothing   -> fail "FUCK A FUCKING DUCK"
   Just addr -> put st {bstAddr = Just $ addr + n})
 
-addLine s = get >>= (\st -> case bstAddr st of
+-- a is alignment (0 is no align, 1 is half, 2 is word...)
+addLine l a = get >>= (\st -> case bstAddr st of
   Nothing   -> fail "SUCK MY FUCKING CoCK"
-  Just addr -> put st {bstLines_acc = ((addr, s):(bstLines_acc st))})
+  Just addr -> do
+    let align = 2^a - addr `mod` 2^a
+    moveAhead align
+    put st {bstLines_acc = ((addr + align, l):(bstLines_acc st))}
+    moveAhead (byteSize l))
 
 addSymbol s = get >>= (\st -> case bstAddr st of
   Nothing   -> fail "FUCK YOU ASSHOLE"
@@ -42,16 +47,24 @@ doLine :: Line -> SymTableBuild
 doLine (Label s) = do addSymbol s
                       returnCurrentResults
 doLine (CmdLine ".text" args) = case args of
-  ((Hex n):[]) -> do newSection n
-                     returnCurrentResults
-  ((Dec n):[]) -> do newSection n
-                     returnCurrentResults
-  ((Bin n):[]) -> do newSection n
-                     returnCurrentResults
-  _            -> fail "Huge fucking screwup"
-doLine l = do addLine l
-              moveAhead (byteSize l)
-              returnCurrentResults
+  ((Num _ n):[]) -> do newSection n
+                       returnCurrentResults
+  _              -> fail "Huge fucking screwup"
+doLine (CmdLine ".align" args) = case args of
+  ((Num _ n):[]) -> get >>= (\st ->
+    case bstAddr st of
+      Nothing -> fail "EAT baLLS"
+      Just addr -> do
+        let align = 2^n - addr `mod` 2^n
+        moveAhead align
+        returnCurrentResults)
+  _              -> fail "Eat a dick."
+doLine l@(CmdLine ".byte" _) = do addLine l 0
+                                  returnCurrentResults
+doLine l@(CmdLine ".half" _) = do addLine l 1
+                                  returnCurrentResults
+doLine l  = do addLine l 2
+               returnCurrentResults
 
 byteSize :: Line -> Int
 byteSize (Label _) = 0

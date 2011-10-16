@@ -1,22 +1,5 @@
 v1
 
-split cleanly into three passes:
-
-pass 1
-expand includes
-create a set of macros
-
-pass 2
-create symbol table
-set addresses
-expand macros
-remove sections, turn into a stream of code
-
-pass 3
-evaluate expressions
-generate code
-
-align and alignment issues
 macros
 space
 bss sections/variable declarations
@@ -27,7 +10,7 @@ report error on duplicate labels
 report error when word > 2^32
 
 v2
-auto-alignment on constants, align 0 to disable
+align 0
 variadic/poly-arity macros?
 poly-arity instructions?
 local labels
