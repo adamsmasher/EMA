@@ -1,10 +1,9 @@
 module Assembler (Bytecode, assemble, makeI, makeR, makeJ) where
 
-import Util (showHex, w8, w16, w32)
-import Register
+import Util (showHex, w32)
+import Register (RegInt)
 
 import Data.Bits ((.&.), (.|.), shiftL, shiftR)
-import Data.List (isPrefixOf)
 import Data.Maybe (fromJust)
 import Data.Word (Word8)
 

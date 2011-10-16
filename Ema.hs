@@ -5,15 +5,12 @@ import Eval (evalExpr)
 import MIPSConst
 import Parser (Line(..), Expr(..), parseFile)
 import Pass2 (SymbolTable, buildSymbolTable)
-import Register
-import Util (readNum, trimLeft, w16, w32)
+import Util (w16, w32)
 
 import Control.Monad (liftM)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as ByteString (pack, readFile, unpack)
-import Data.Char (isDigit, toLower)
 import Data.Word (Word8)
-import Text.ParserCombinators.Parsec (parse)
 
 data AssemblyState a = Error String | OK a 
 
@@ -66,7 +63,7 @@ assembleLine symbolTable (addr, l) = case l of
   CmdLine ".byte" bytes -> do bs <- sequence $ map (evalExpr symbolTable) bytes
                               return . (map fromIntegral) $ bs
   CmdLine ".half" halfs -> do hs <- sequence $ map (evalExpr symbolTable) halfs
-                              liftM concat . mapM (liftM reverse . w32) $ hs
+                              liftM concat . mapM (liftM reverse . w16) $ hs
   CmdLine ".word" words -> do ws <- sequence $ map (evalExpr symbolTable) words
                               liftM concat . mapM (liftM reverse . w32) $ ws
   CmdLine _ _           -> toInstruction symbolTable addr l >>= 

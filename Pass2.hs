@@ -1,9 +1,7 @@
 module Pass2 (SymbolTable, buildSymbolTable) where
 
-import Control.Monad (msum)
 import Control.Monad.State (State(..), get, put, evalState)
 import Parser (Line(..), Expr(..))
-import Text.ParserCombinators.Parsec (parse)
 
 type SymbolTable = [(String, Int)]
 
