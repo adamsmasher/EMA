@@ -9,6 +9,7 @@ import Util (w16, w32)
 
 import Control.Monad (liftM)
 import Data.ByteString (ByteString)
+import Data.Char (ord)
 import qualified Data.ByteString as ByteString (pack, readFile, unpack)
 import Data.Word (Word8)
 
@@ -66,6 +67,9 @@ assembleLine symbolTable (addr, l) = case l of
                               liftM concat . mapM (liftM reverse . w16) $ hs
   CmdLine ".word" words -> do ws <- sequence $ map (evalExpr symbolTable) words
                               liftM concat . mapM (liftM reverse . w32) $ ws
+  CmdLine ".ascii" ((Str s):[]) -> return $ map (fromIntegral . ord) s
+  CmdLine ".asciiz"((Str s):[]) -> return $
+    (map (fromIntegral . ord) s) ++ [(fromIntegral 0)]
   CmdLine _ _           -> toInstruction symbolTable addr l >>= 
                            return . assemble
 

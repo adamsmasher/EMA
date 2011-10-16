@@ -61,6 +61,14 @@ doLine (CmdLine ".align" args) = case args of
         moveAhead align
         returnCurrentResults)
   _              -> fail "Eat a dick."
+doLine l@(CmdLine ".ascii" args) = case args of
+  ((Str s):[]) -> do addLine l 0
+                     returnCurrentResults
+  _            -> fail "Ballsacks!"
+doLine l@(CmdLine ".asciiz" args) = case args of
+  ((Str s):[]) -> do addLine l 0
+                     returnCurrentResults
+  _            -> fail "Ballsackz!"
 doLine l@(CmdLine ".byte" _) = do addLine l 0
                                   returnCurrentResults
 doLine l@(CmdLine ".half" _) = do addLine l 1

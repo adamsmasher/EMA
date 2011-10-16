@@ -2,7 +2,6 @@ v1
 
 EASY:
 space
-ascii/asciiz
 report error when word > 2^32?
 
 BIGGER:
