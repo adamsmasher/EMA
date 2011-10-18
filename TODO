@@ -4,14 +4,19 @@ EASY:
 report error when word > 2^32?
 clean up comments and stuff
 default macros
+bss align?
 
 BIGGER:
-bss sections/variable declarations
 bad arguments
 
-v2
+v2+
 fix crazy slow paren parsing
+semicolons allow multiple statements per line
 align 0, I guess
 variadic/poly-arity macros?
 poly-arity instructions?
-local labels
+local labels/1f 1b
+expand valid labels
+more string control chars
+coprocessor instructions
+
