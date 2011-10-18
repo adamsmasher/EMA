@@ -8,9 +8,9 @@ default macros
 BIGGER:
 bss sections/variable declarations
 bad arguments
-full exprs
 
 v2
+fix crazy slow paren parsing
 align 0, I guess
 variadic/poly-arity macros?
 poly-arity instructions?

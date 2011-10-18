@@ -101,9 +101,10 @@ arg = do a <- try offsetBase
          whitespaces
          return a
 
-expr = l4
+expr = l7
 
-atom = num <|> symbol
+l0 = paren
+atom = num <|> symbol <|> l0
 l1 = negcomp <|> atom
 l2 = try muldivExpr <|> l1
 l3 = try addsubExpr <|> l2
@@ -111,6 +112,8 @@ l4 = try shiftExpr <|> l3
 l5 = try andExpr <|> l4
 l6 = try xorExpr <|> l5
 l7 = try orExpr <|> l6
+
+paren = between (char '(' >> whitespaces) (whitespaces >> char ')') expr
 
 negcomp = do op <- char '-' <|> char '~'
              e <- atom
