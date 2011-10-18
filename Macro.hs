@@ -27,6 +27,9 @@ getMacros ((CmdLine ".macro" params):rest) = do
   (rest, restMacros) <- getMacros after
   let m = Macro params mLines
   return (rest, ((name, m):restMacros))
+getMacros (l:ls) = do
+  (restLines, ms) <- getMacros ls
+  return $ (l:restLines, ms)
 
 getRestOfMacro :: Monad m => [Line] -> m ([Line], [Line])
 getRestOfMacro [] = fail "Unterminated macro"
@@ -39,6 +42,7 @@ getRestOfMacro (l:ls) = do (mLines, after) <- getRestOfMacro ls
 expandLine ms l@(CmdLine cmd args) = case lookup cmd ms of
   Nothing -> return [l]
   Just m  -> expandMacros' (delete (cmd, m) ms) (expandMacro m args)
+expandLine ms l = return [l]
 
 expandMacro :: Macro -> [Expr] -> [Line]
 expandMacro (Macro params lines) args = map (substituteArgs params args) lines
