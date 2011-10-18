@@ -1,10 +1,11 @@
-module Parser (Line(..), Expr(..), NumType(..), parseFile, regNum, 
+module Parser (Line(..), Expr(..), NumType(..), getOp, parseFile, regNum, 
                symbolString) where
 
 import Register (lookupRegisterName)
 import Util (readBin)
 
 import Control.Arrow ((>>>))
+import Data.Bits ((.|.), (.&.), shiftL, shiftR, xor)
 import Data.Char(isSpace)
 import Data.Maybe (fromJust, maybeToList)
 import Numeric (readHex)
@@ -12,7 +13,8 @@ import Text.Parsec.Error (Message(SysUnExpect, UnExpect, Expect, Message),
                           errorPos, errorMessages)
 import Text.ParserCombinators.Parsec (Parser, ParseError, sourceColumn)
 import Text.ParserCombinators.Parsec.Char (alphaNum, char, digit, hexDigit,
-                                           letter, newline, oneOf, satisfy)
+                                           letter, newline, oneOf, satisfy,
+                                           string)
 import Text.ParserCombinators.Parsec.Combinator (between, many1, option,
                                                  optionMaybe, sepBy)
 import Text.ParserCombinators.Parsec.Prim ((<|>), many, parse, try)
@@ -25,8 +27,13 @@ data Expr = Str String
           | Register Int
           | Num NumType Int
           | OffsetBase Expr Int
+          | Negate Expr
+          | Comp Expr
+          | BinOp Expr Expr BinOpType
   deriving (Show, Eq)
 data NumType = Hex | Dec | Bin deriving (Show, Eq)
+data BinOpType = Add | Sub | Mul | Div | And | Or | Xor | Lsh | Rsh
+  deriving (Show, Eq)
 
 ------ public -------------------------------------------------
 
@@ -46,6 +53,17 @@ regNum _ = Nothing
 
 symbolString (Symbol s) = return s
 symbolString _ = fail $ "not a symbol"
+
+getOp :: BinOpType -> (Int -> Int -> Int)
+getOp Add = (+)
+getOp Sub = (-)
+getOp Mul = (*)
+getOp Div = div
+getOp Lsh = shiftL
+getOp Rsh = shiftR
+getOp And = (.&.)
+getOp Or  = (.|.)
+getOp Xor = xor
 
 ------ parsers -------------------------------------------------
 
@@ -78,11 +96,75 @@ argList :: Parser [Expr]
 argList = arg `sepBy` (char ',' >> whitespaces)
 
 arg = do a <- try offsetBase
-                <|> num
-                <|> (try symbol) 
-                <|> register 
+                <|> register
+                <|> expr
          whitespaces
          return a
+
+expr = l4
+
+atom = num <|> symbol
+l1 = negcomp <|> atom
+l2 = try muldivExpr <|> l1
+l3 = try addsubExpr <|> l2
+l4 = try shiftExpr <|> l3
+l5 = try andExpr <|> l4
+l6 = try xorExpr <|> l5
+l7 = try orExpr <|> l6
+
+negcomp = do op <- char '-' <|> char '~'
+             e <- atom
+             case op of
+               '-' -> return $ Negate e
+               '~' -> return $ Comp e
+
+muldivExpr = do e1 <- l1
+                whitespaces
+                op <- char '*' <|> char '/'
+                whitespaces
+                e2 <- l2
+                case op of
+                  '*' -> return $ BinOp e1 e2 Mul
+                  '/' -> return $ BinOp e1 e2 Div
+
+addsubExpr = do e1 <- l2
+                whitespaces
+                op <- char '+' <|> char '-'
+                whitespaces
+                e2 <- l3
+                case op of
+                  '+' -> return $ BinOp e1 e2 Add
+                  '-' -> return $ BinOp e1 e2 Sub
+
+shiftExpr = do e1 <- l3
+               whitespaces
+               op <- string "<<" <|> string ">>"
+               whitespaces
+               e2 <- l4
+               case op of
+                 "<<" -> return $ BinOp e1 e2 Lsh
+                 ">>" -> return $ BinOp e1 e2 Rsh
+
+andExpr = do e1 <- l4
+             whitespaces
+             char '&'
+             whitespaces
+             e2 <- l5
+             return $ BinOp e1 e2 And
+
+xorExpr = do e1 <- l5
+             whitespaces
+             char '^'
+             whitespaces
+             e2 <- l6
+             return $ BinOp e1 e2 Xor
+
+orExpr = do e1 <- l6
+            whitespaces
+            char '|'
+            whitespaces
+            e2 <- l7
+            return $ BinOp e1 e2 Or
 
 offsetBase :: Parser Expr
 offsetBase = do n <- option (Num Dec 0) num
