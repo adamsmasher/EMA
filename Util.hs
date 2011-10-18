@@ -44,3 +44,6 @@ w32 n = do
   low  <- w8 $ n .&. 0x000000FF
   return [high, m1, m2, low]
 
+doTimes :: Monad m => Int -> (Int -> m b) -> m ()
+doTimes 0 _ = return ()
+doTimes n f = f n >> doTimes (n-1) f

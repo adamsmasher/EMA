@@ -1,14 +1,13 @@
 v1
 
 EASY:
-space
 report error when word > 2^32?
+clean up comments and stuff
 
 BIGGER:
-macros
 bss sections/variable declarations
 bad arguments
-full exprs?
+full exprs
 
 v2
 align 0, I guess

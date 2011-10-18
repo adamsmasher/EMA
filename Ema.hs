@@ -2,6 +2,7 @@ module Ema where
 
 import Assembler (Bytecode, assemble, makeI, makeJ, makeR)
 import Eval (evalExpr)
+import Macro (expandMacros)
 import MIPSConst
 import Parser (Line(..), Expr(..), NumType(..), parseFile)
 import Pass2 (SymbolTable, buildSymbolTable)
@@ -49,8 +50,9 @@ incBin file = ByteString.readFile file
 -- given the text of a file, assembleFile converts it to an
 -- assembled binary
 assembleFile :: Monad m => [Line] -> m ByteString
-assembleFile src = do let (ls, symbolTable) = buildSymbolTable src
-                      bytes <- assembleLines symbolTable ls
+assembleFile src = do expandedSrc <- expandMacros src
+                      let (finalSrc, symbolTable) = buildSymbolTable expandedSrc
+                      bytes <- assembleLines symbolTable finalSrc
                       return $ ByteString.pack $ bytes
 
 assembleLines :: Monad m => SymbolTable -> [(Int, Line)] -> m [Word8]

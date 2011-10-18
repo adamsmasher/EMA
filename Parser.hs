@@ -1,4 +1,5 @@
-module Parser (Line(..), Expr(..), NumType(..), parseFile) where
+module Parser (Line(..), Expr(..), NumType(..), parseFile, regNum, 
+               symbolString) where
 
 import Register (lookupRegisterName)
 import Util (readBin)
@@ -18,14 +19,14 @@ import Text.ParserCombinators.Parsec.Prim ((<|>), many, parse, try)
 
 ------ types -------------------------------------------------
 
-data Line = Label String | CmdLine String [Expr] deriving Show
+data Line = Label String | CmdLine String [Expr] deriving (Show, Eq)
 data Expr = Str String
           | Symbol String
           | Register Int
           | Num NumType Int
           | OffsetBase Expr Int
-  deriving Show
-data NumType = Hex | Dec | Bin deriving Show
+  deriving (Show, Eq)
+data NumType = Hex | Dec | Bin deriving (Show, Eq)
 
 ------ public -------------------------------------------------
 
@@ -43,8 +44,8 @@ stripComment = takeWhile (/='#')
 regNum (Register n) = Just n
 regNum _ = Nothing
 
-symbolString (Symbol s) = Just s
-symbolString _ = Nothing
+symbolString (Symbol s) = return s
+symbolString _ = fail $ "not a symbol"
 
 ------ parsers -------------------------------------------------
 
