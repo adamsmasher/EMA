@@ -3,6 +3,7 @@ v1
 EASY:
 report error when word > 2^32?
 clean up comments and stuff
+default macros
 
 BIGGER:
 bss sections/variable declarations
