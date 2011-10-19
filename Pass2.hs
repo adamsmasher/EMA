@@ -1,11 +1,11 @@
 module Pass2 (SymbolTable, buildSymbolTable) where
 
 import Parser (Line(..), Expr(..), NumType(..))
-import Util (doTimes)
+import Util (doTimes, invalidArgs)
 
 import Control.Monad.State (State(..), get, put, evalState)
 
-type SymbolTable = [(String, Int)]
+type SymbolTable = [(String, Expr)]
 
 -- our sym table build is a process that stores its state in a BuildST
 -- and its result is a pair of the remaining lines (strings + addresses) and a
@@ -44,8 +44,13 @@ addLine l a = get >>= (\st -> case bstAddr st of
 
 addSymbol s = get >>= (\st -> case bstAddr st of
   Nothing   -> noSection
-  Just addr -> case lookup s (bstSymbols st) of
-    Nothing -> put st { bstSymbols = (s, addr):(bstSymbols st) }
+  Just addr -> addConstant s (Num Hex addr))
+
+addConstant :: String -> Expr -> SymTableBuild
+addConstant s c = get >>= (\st -> let symTable = bstSymbols st in
+  case lookup s symTable of
+    Nothing -> do put st { bstSymbols = (s, c):symTable }
+                  returnCurrentResults
     Just _  -> fail $ "Duplicate symbol " ++ s)
 
 dummyBytes n = get >>= (\st -> case bstSectionType st of
@@ -70,12 +75,16 @@ doLine (CmdLine ".text" args) = case args of
   ((Num _ n):[]) -> do newSection n
                        setSectionType Text
                        returnCurrentResults
-  _              -> fail "Huge fucking screwup"
+  _              -> invalidArgs ".text"
+doLine (CmdLine ".define" args) = case args of
+  ((Symbol name):e:[]) -> do addConstant name e
+                             returnCurrentResults
+  _ -> invalidArgs ".define"
 doLine (CmdLine ".bss" args) = case args of
   ((Num _ n):[]) -> do newSection n
                        setSectionType BSS
                        returnCurrentResults
-  _              -> fail "What the hell, brah"
+  _              -> invalidArgs ".bss"
 doLine (CmdLine ".align" args) = case args of
   ((Num _ n):[]) -> get >>= (\st ->
     case bstAddr st of
@@ -84,32 +93,32 @@ doLine (CmdLine ".align" args) = case args of
         let align = (2^n - addr `mod` 2^n) `mod` 2^n
         dummyBytes align
         returnCurrentResults)
-  _              -> fail "Eat a dick."
+  _              -> invalidArgs ".align"
 doLine l@(CmdLine ".ascii" args) = do
   checkSectionType Text
   case args of
     ((Str s):[]) -> do addLine l 0
                        returnCurrentResults
-    _            -> fail "Ballsacks!"
+    _            -> invalidArgs ".ascii"
 doLine l@(CmdLine ".asciiz" args) = do
   checkSectionType Text
   case args of
     ((Str s):[]) -> do addLine l 0
                        returnCurrentResults
-    _            -> fail "Ballsackz!"
+    _            -> invalidArgs ".asciiz"
 doLine l@(CmdLine ".space" args) = do
   checkSectionType Text
   case args of
     ((Num _ n):[]) -> do dummyBytes n
                          returnCurrentResults
-    _              -> fail "FUCKTARDO"
+    _              -> invalidArgs ".space"
 doLine (CmdLine ".comm" args) = case args of
   ((Symbol name):(Num _ size):[]) -> do
     checkSectionType BSS
     addSymbol name
     moveAhead size
     returnCurrentResults
-  _ -> fail "args"
+  _ -> invalidArgs ".comm"
 doLine l@(CmdLine ".byte" _) = do 
   checkSectionType Text
   addLine l 0

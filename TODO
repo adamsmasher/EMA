@@ -1,15 +1,11 @@
 v1
 
 EASY:
-report error when word > 2^32?
 clean up comments and stuff
-default macros
-bss align?
-
-BIGGER:
-bad arguments
 
 v2+
+default macros
+report error when word >= 2^32
 fix crazy slow paren parsing
 semicolons allow multiple statements per line
 align 0, I guess
@@ -19,4 +15,5 @@ local labels/1f 1b
 expand valid labels
 more string control chars
 coprocessor instructions
-
+repetition in defines
+line numbers and stuff when error reporting

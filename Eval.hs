@@ -11,7 +11,7 @@ evalExpr symTable e = case e of
   Str s    -> fail $ "unexpected string literal"
   Symbol s -> case lookup s symTable of
     Nothing -> fail $ "undefined symbol " ++ s
-    Just v  -> return v
+    Just v  -> eval v
   Register _ -> fail "unexpected register"
   Num _ n -> return n
   OffsetBase _ _ -> fail "unexpected offset base pair"

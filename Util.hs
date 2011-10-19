@@ -1,27 +1,14 @@
 module Util where
 
-import Control.Monad
 import Data.Bits ((.&.), shiftR)
-import Data.Char (digitToInt, intToDigit, isSpace, toLower)
+import Data.Char (digitToInt, intToDigit)
 import Data.Word (Word8)
-import Numeric (readDec, readHex, readInt, showIntAtBase)
+import Numeric (readInt, showIntAtBase)
 
-readNum :: Monad m => String -> m Int
-readNum = readNum' . (map toLower)
-readNum' ('0':'x':rest) = readNum'' readHex rest
-readNum' ('%':rest)     = readNum'' readBin rest
-readNum' str            = readNum'' readDec str
-readNum'' reader str = case reader str of
-  [] -> fail "readNum on empty string"
-  ((n,""):[])  -> return n
-  ((n,bad):[]) -> fail $ "unexpected " ++ bad
-
+readBin :: String -> [(Int, String)]
 readBin = readInt 2 (\c -> c == '0' || c == '1') digitToInt
 
 showHex n = showIntAtBase 16 intToDigit n "0x"
-
-trimLeft :: String -> String
-trimLeft = dropWhile isSpace
 
 w8 :: Monad m => Int -> m Word8
 w8 n | n >= 2^8 || n < -(2^7) =
@@ -47,3 +34,5 @@ w32 n = do
 doTimes :: Monad m => Int -> (Int -> m b) -> m ()
 doTimes 0 _ = return ()
 doTimes n f = f n >> doTimes (n-1) f
+
+invalidArgs s = fail $ "invalid arguments given for command " ++ s
