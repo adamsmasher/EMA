@@ -1,0 +1,87 @@
+EMA stands for Elegant MIPS Assembler. Note that "elegant" here is not a claim
+but rather a design goal. EMA specifically targets the R3000 series of
+processors. Its syntax resembles that used in official MIPS documentation.
+
+EMA is a "pure" MIPS assembler - it doesn't implement any pseudo-instructions.
+It does, however, have support for macros, so you can easily implement your own.
+In the future EMA may start with a number of predefined macros.
+
+EMA is very simple - it doesn't support any superfluous section types or complex
+output formats. It does not use a linker and has no support for modules.
+It does not do any instruction reordering and will not automatically or
+intelligently fill delay slots. 
+
+USAGE:
+ema <source-file> <output-file>
+
+SYNTAX:
+Comments start with # and run to the end of a line
+All register names begin with $, e.g. $zero, $sp, $22, etc.
+Hex literals are prefixed with 0x, binary literals with %
+All instructions must live inside of a .text section, all memory allocation
+  directives (i.e. .comm) inside of a .bss section.
+Memory allocation directives do not actually write anything to the binary -
+they just define a label for an address in memory.
+Your file is assembled linearly: a program like
+
+  .text 0x80020000
+  add $1, $2, $3
+  .text 0x80010000
+  sub $1, $2, $3
+
+will result in a binary file containing the opcodes for the add and the sub, in
+that order. 
+
+Labels can appear on their own line or before an instruction or other directive.
+A valid label is either an underscore or a letter followed by zero or more
+underscores or alphanumeric characters. A label delcaration is always followed
+by a colon.
+
+l1: add $1, $2, $3
+
+DIRECTIVES:
+.align <n>
+  ensures that the next instruction/declaration is aligned.
+  0 means no alignment.
+  1 means aligned to half-words (divisible by 2^1)
+  2 means aligned to words (divisible by 2^2)
+  etc.
+.ascii "<text>"
+  writes ASCII text to the binary
+.asciiz "<text>"
+  As above, but with a null-terminator (0 byte) at the end
+.bss <address>
+  Begin a BSS section. If <address> is not specified, assume that it is
+  contiguous with the previous section
+.byte <n>[, <n>]*
+  inserts the bytes specified into the binary
+.comm <name>, <size>
+  allocates memory space in a BSS section for a variable named <name>.
+.define <name>, <expr>
+  creates a constant that represents the given expression
+.endmacro
+.half <n>[, <n>]*
+  inserts the halfwords listed into the binary
+.incbin "<filename>"
+  inserts the contents of the file <filename> into the assembled binary
+.include "<filename>"
+  inserts the text of the file <filename> into your code
+.macro <macroname>[, <args>]*
+  begins the definition of a macro. args are symbols: any occurence of the
+  symbol will be replaced by the expression in the macro call. 
+.space <n>
+  inserts dummy space into the binary in a text section. skips space in a BSS
+  section
+.text <address>
+  Begin a text section. If <address> is not specified, assume that it is
+  contiguous with the previous section. A text section is where actual data
+  and instructions written to the file go.
+.word <n>[, <n>]*
+  inserts the words listed into the binary
+
+Ideas for future improvement are listed in the TODO file.
+
+EMA probably has a bug or two. 
+
+Enjoy!
+-Adam (unfactorable dawt polynomial aht gmail dawt cawm)

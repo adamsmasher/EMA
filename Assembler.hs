@@ -21,7 +21,7 @@ makeR _ _ _ _ sa _ | sa < 0 || sa >= (2^5) =
 makeR op r1 r2 r3 sa f = return $ RInstruction op r1 r2 r3 sa f
 makeJ _ t | t .&. 3 /= 0 =
   fail $ "jump target " ++ (showHex t) ++ " not word aligned!"
-makeJ op t = return $ JInstruction op (t `shiftR` 2) 
+makeJ op t = return $ JInstruction op ((t .&. 0x0FFFFFFF) `shiftR` 2)
 
 type ShiftAmount = Integer
 
