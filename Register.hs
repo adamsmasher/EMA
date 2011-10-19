@@ -2,9 +2,9 @@ module Register where
 
 import Data.Char (isDigit, toLower)
 
-type RegInt = Int
+type RegInt = Integer
 
-lookupRegisterName :: (Monad m) => String -> m Int
+lookupRegisterName :: (Monad m) => String -> m Integer
 lookupRegisterName str
   | all isDigit str = case read str of
       n | n > 31 -> fail "Invalid register number"

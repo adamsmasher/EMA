@@ -9,8 +9,8 @@ import Data.Word (Word8)
 
 data Bytecode = 
     RInstruction Opcode RegInt RegInt RegInt ShiftAmount FuncCode
-  | IInstruction Opcode RegInt RegInt Int
-  | JInstruction Opcode Int
+  | IInstruction Opcode RegInt RegInt Integer
+  | JInstruction Opcode Integer
   deriving Show
 
 makeI _ _ _ imm | imm > 0xFFFF || imm < -(2^15) =
@@ -19,17 +19,15 @@ makeI op r1 r2 imm = return $ IInstruction op r1 r2 imm
 makeR _ _ _ _ sa _ | sa < 0 || sa >= (2^5) =
   fail $ "shift amount " ++ (show sa) ++ " is too big (must be 5-bit)"
 makeR op r1 r2 r3 sa f = return $ RInstruction op r1 r2 r3 sa f
-makeJ _ t | t >= (2^28) =
-  fail $ "jump target " ++ (showHex t) ++ " out of range"
 makeJ _ t | t .&. 3 /= 0 =
   fail $ "jump target " ++ (showHex t) ++ " not word aligned!"
 makeJ op t = return $ JInstruction op (t `shiftR` 2) 
 
-type ShiftAmount = Int
+type ShiftAmount = Integer
 
-type Opcode = Int
+type Opcode = Integer
 
-type FuncCode = Int
+type FuncCode = Integer
 
 assemble :: Bytecode -> [Word8]
 assemble (RInstruction op rs rt rd shamt funct) =

@@ -10,11 +10,11 @@ type SymbolTable = [(String, Expr)]
 -- our sym table build is a process that stores its state in a BuildST
 -- and its result is a pair of the remaining lines (strings + addresses) and a
 -- symbol table
-type SymTableBuild = State BuildST ([(Int, Line)], SymbolTable)
-data BuildST = BuildST { bstLines_acc   :: [(Int, Line)],
+type SymTableBuild = State BuildST ([(Integer, Line)], SymbolTable)
+data BuildST = BuildST { bstLines_acc   :: [(Integer, Line)],
                          bstSymbols     :: SymbolTable,
                          bstSectionType :: Maybe SectionType,
-                         bstAddr        :: Maybe Int }
+                         bstAddr        :: Maybe Integer }
 data SectionType = Text | BSS deriving Eq
 
 startState = BuildST [] [] Nothing Nothing
@@ -53,15 +53,17 @@ addConstant s c = get >>= (\st -> let symTable = bstSymbols st in
                   returnCurrentResults
     Just _  -> fail $ "Duplicate symbol " ++ s)
 
+dummyBytes :: Integer -> SymTableBuild
 dummyBytes n = get >>= (\st -> case bstSectionType st of
-    Just Text -> doTimes n (\_ -> addLine (CmdLine ".byte" [Num Hex 0xAA]) 0)
-    Just BSS  -> moveAhead n
+    Just Text -> do doTimes n (\_ -> addLine (CmdLine ".byte" [Num Hex 0xAA]) 0)
+                    returnCurrentResults
+    Just BSS  -> moveAhead n >> returnCurrentResults
     Nothing   -> noSection)
 
 returnCurrentResults = do st <- get
                           return $ (reverse $ bstLines_acc st, bstSymbols st)
 
-buildSymbolTable :: [Line] -> ([(Int, Line)], SymbolTable)
+buildSymbolTable :: [Line] -> ([(Integer, Line)], SymbolTable)
 buildSymbolTable [] = ([], []) -- chain requires non-empty lists
 buildSymbolTable src =
   evalState (chain $ map doLine src) startState 
@@ -75,6 +77,12 @@ doLine (CmdLine ".text" args) = case args of
   ((Num _ n):[]) -> do newSection n
                        setSectionType Text
                        returnCurrentResults
+  []             -> get >>= (\st ->
+    case (bstAddr st) of
+      Nothing   -> fail "No starting address for section"
+      Just addr -> do newSection addr
+                      setSectionType Text
+                      returnCurrentResults)
   _              -> invalidArgs ".text"
 doLine (CmdLine ".define" args) = case args of
   ((Symbol name):e:[]) -> do addConstant name e
@@ -84,6 +92,12 @@ doLine (CmdLine ".bss" args) = case args of
   ((Num _ n):[]) -> do newSection n
                        setSectionType BSS
                        returnCurrentResults
+  []             -> get >>= (\st ->
+    case (bstAddr st) of
+      Nothing   -> fail "No starting address for section"
+      Just addr -> do newSection addr
+                      setSectionType BSS
+                      returnCurrentResults)
   _              -> invalidArgs ".bss"
 doLine (CmdLine ".align" args) = case args of
   ((Num _ n):[]) -> get >>= (\st ->
@@ -130,9 +144,9 @@ doLine l@(CmdLine ".half" _) = do
 doLine l  = do addLine l 2
                returnCurrentResults
 
-byteSize :: Line -> Int
+byteSize :: Line -> Integer
 byteSize (Label _) = 0
-byteSize (CmdLine ".byte" args) = length args
-byteSize (CmdLine ".half" args) = length args * 2
-byteSize (CmdLine ".word" args) = length args * 4
+byteSize (CmdLine ".byte" args) = fromIntegral $ length args
+byteSize (CmdLine ".half" args) = fromIntegral $ length args * 2
+byteSize (CmdLine ".word" args) = fromIntegral $ length args * 4
 byteSize (CmdLine _ _)          = 4

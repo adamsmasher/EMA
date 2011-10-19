@@ -55,13 +55,13 @@ assembleFile src = do expandedSrc <- expandMacros src
                       bytes <- assembleLines symbolTable finalSrc
                       return $ ByteString.pack $ bytes
 
-assembleLines :: Monad m => SymbolTable -> [(Int, Line)] -> m [Word8]
+assembleLines :: Monad m => SymbolTable -> [(Integer, Line)] -> m [Word8]
 assembleLines symbolTable ls = liftM concat $ sequence $ map asm ls
   where asm = assembleLine symbolTable
 
 -- assembleLine takes a line of code and, if successful, assembles it into
 -- a binary word representing an instruction
-assembleLine :: Monad m => SymbolTable -> (Int, Line) -> m [Word8]
+assembleLine :: Monad m => SymbolTable -> (Integer, Line) -> m [Word8]
 assembleLine symbolTable (addr, l) = case l of
   CmdLine ".byte" bytes -> do bs <- sequence $ map (evalExpr symbolTable) bytes
                               return . (map fromIntegral) $ bs
@@ -75,7 +75,7 @@ assembleLine symbolTable (addr, l) = case l of
   CmdLine _ _           -> toInstruction symbolTable addr l >>= 
                            return . assemble
 
-toInstruction :: Monad m => SymbolTable -> Int -> Line -> m Bytecode
+toInstruction :: Monad m => SymbolTable -> Integer -> Line -> m Bytecode
 toInstruction symbolTable addr l = case l of
   CmdLine "add"    params -> case params of
     ((Register rd):(Register rs):(Register rt):[]) -> makeR 0 rs rt rd 0 addFunc

@@ -6,13 +6,13 @@ import Pass2 (SymbolTable)
 import Data.Bits (complement)
 import Text.ParserCombinators.Parsec (parse)
 
-evalExpr :: Monad m => SymbolTable -> Expr -> m Int
+evalExpr :: Monad m => SymbolTable -> Expr -> m Integer
 evalExpr symTable e = case e of
   Str s    -> fail $ "unexpected string literal"
   Symbol s -> case lookup s symTable of
     Nothing -> fail $ "undefined symbol " ++ s
     Just v  -> eval v
-  Register _ -> fail "unexpected register"
+  Register r -> fail $ "unexpected register " ++ (show r)
   Num _ n -> return n
   OffsetBase _ _ -> fail "unexpected offset base pair"
   Negate e' -> do x <- eval e'

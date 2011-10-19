@@ -1,9 +1,5 @@
-v1
-
-EASY:
-clean up comments and stuff
-
 v2+
+check for errors when jumping too far
 default macros
 report error when word >= 2^32
 fix crazy slow paren parsing

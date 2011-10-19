@@ -24,9 +24,9 @@ import Text.ParserCombinators.Parsec.Prim ((<|>), many, parse, try)
 data Line = Label String | CmdLine String [Expr] deriving (Show, Eq)
 data Expr = Str String
           | Symbol String
-          | Register Int
-          | Num NumType Int
-          | OffsetBase Expr Int
+          | Register Integer
+          | Num NumType Integer
+          | OffsetBase Expr Integer
           | Negate Expr
           | Comp Expr
           | BinOp Expr Expr BinOpType
@@ -54,13 +54,13 @@ regNum _ = Nothing
 symbolString (Symbol s) = return s
 symbolString _ = fail $ "not a symbol"
 
-getOp :: BinOpType -> (Int -> Int -> Int)
+getOp :: BinOpType -> (Integer -> Integer -> Integer)
 getOp Add = (+)
 getOp Sub = (-)
 getOp Mul = (*)
 getOp Div = div
-getOp Lsh = shiftL
-getOp Rsh = shiftR
+getOp Lsh = \x y -> x `shiftL` (fromIntegral y)
+getOp Rsh = \x y -> x `shiftR` (fromIntegral y)
 getOp And = (.&.)
 getOp Or  = (.|.)
 getOp Xor = xor
@@ -170,7 +170,7 @@ orExpr = do e1 <- l6
             return $ BinOp e1 e2 Or
 
 offsetBase :: Parser Expr
-offsetBase = do n <- option (Num Dec 0) num
+offsetBase = do n <- option (Num Dec 0) (try expr)
                 char '('
                 whitespaces
                 r <- register
