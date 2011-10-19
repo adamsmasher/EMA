@@ -163,6 +163,9 @@ toInstruction symbolTable addr l = case l of
     ((Register rd):(Register rs):[]) -> 
       makeR special rs 0 rd 0 jalrFunc
     _ -> invalidArgs "jalr"
+  CmdLine "jr"     params -> case params of
+    ((Register rs):[]) -> makeR special rs 0 0 0 jrFunc
+    _ -> invalidArgs "jr"
   CmdLine "lb"     params -> case params of
     ((Register rt):(OffsetBase off base):[]) -> do
       off' <- eval off

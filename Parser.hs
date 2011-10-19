@@ -97,6 +97,7 @@ argList = arg `sepBy` (char ',' >> whitespaces)
 
 arg = do a <- try offsetBase
                 <|> register
+                <|> stringLiteral
                 <|> expr
          whitespaces
          return a

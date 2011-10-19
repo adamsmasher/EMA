@@ -1,5 +1,7 @@
 module MIPSConst where
 
+supportedInstructions = words "add addi addiu addu and andi beq bgez bgezal bgtz blez bltz bltzal bne div divu j jal jalr jr lb lbu lh lhu lui lw lwl lwr mfhi mflo mthi mtlo mult multu nor or ori sb sh sll sllv slt slti sltiu sltu sra srav srl srlv sub subu sw swl swr xor xori"
+
 special = 0x00 :: Integer
 regimm  = 0x01 :: Integer
 jOp     = 0x02 :: Integer

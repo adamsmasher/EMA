@@ -1,5 +1,6 @@
 module Macro (expandMacros) where
 
+import MIPSConst
 import Parser (Expr(..), Line(..), symbolString)
 
 import Data.List (delete, elemIndex)
@@ -23,6 +24,7 @@ getMacros :: Monad m => [Line] -> m ([Line], MacroTable)
 getMacros [] = return ([], [])
 getMacros ((CmdLine ".macro" params):rest) = do
   (name:params) <- mapM symbolString params 
+  checkValidName name
   (mLines, after) <- getRestOfMacro rest
   (rest, restMacros) <- getMacros after
   let m = Macro params mLines
@@ -30,6 +32,10 @@ getMacros ((CmdLine ".macro" params):rest) = do
 getMacros (l:ls) = do
   (restLines, ms) <- getMacros ls
   return $ (l:restLines, ms)
+
+checkValidName n | n `elem` supportedInstructions =
+  fail $ n ++ " is an instruction name and cannot be the name of a macro"
+checkValidName _ = return ()
 
 getRestOfMacro :: Monad m => [Line] -> m ([Line], [Line])
 getRestOfMacro [] = fail "Unterminated macro"
