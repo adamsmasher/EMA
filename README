@@ -69,9 +69,12 @@ DIRECTIVES:
 .macro <macroname>[, <args>]*
   begins the definition of a macro. args are symbols: any occurence of the
   symbol will be replaced by the expression in the macro call. 
-.space <n>
-  inserts dummy space into the binary in a text section. skips space in a BSS
-  section
+.padto <n>, [<val>]
+  inserts dummy <val>s into the binary in a text section. skips space in a
+  BSS. pads until the current address is n.
+.space <n>, [<val>]
+  inserts <n> dummy <val>s into the binary in a text section. skips space in a 
+  BSS section. the default value of <val> is undefined.
 .text <address>
   Begin a text section. If <address> is not specified, assume that it is
   contiguous with the previous section. A text section is where actual data

@@ -2,6 +2,7 @@ module Util where
 
 import Data.Bits (Bits, (.&.), shiftR)
 import Data.Char (digitToInt, intToDigit)
+import Data.Foldable (forM_)
 import Data.Word (Word8)
 import Numeric (readInt, showIntAtBase)
 
@@ -20,7 +21,7 @@ w16 n | n >= 2^16 || n < -(2^15) =
 w16 n = do
   high <- w8 $ n `shiftR` 8
   low  <- w8 $ n .&. 0x00FF 
-  return [high, low]
+  return $ reverse [high, low]
 
 w32 :: Monad m => Integer -> m [Word8]
 w32 n = do
@@ -28,10 +29,9 @@ w32 n = do
   m1   <- w8 $ (n .&. 0x00FF0000) `shiftR` 16
   m2   <- w8 $ (n .&. 0x0000FF00) `shiftR` 8
   low  <- w8 $ n .&. 0x000000FF
-  return [high, m1, m2, low]
+  return $ reverse [high, m1, m2, low]
 
 doTimes :: (Monad m, Integral n) => n -> (n -> m b) -> m ()
-doTimes 0 _ = return ()
-doTimes n f = f n >> doTimes (n-1) f
+doTimes n f = forM_ [1..n] f
 
 invalidArgs s = fail $ "invalid arguments given for command " ++ s

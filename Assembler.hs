@@ -1,4 +1,4 @@
-module Assembler (Bytecode, assemble, makeI, makeR, makeJ) where
+module Assembler (Bytecode, assemble, makeBranch, makeI, makeR, makeJ) where
 
 import Util (showHex, w32)
 import Register (RegInt)
@@ -22,6 +22,10 @@ makeR op r1 r2 r3 sa f = return $ RInstruction op r1 r2 r3 sa f
 makeJ _ t | t .&. 3 /= 0 =
   fail $ "jump target " ++ (showHex t) ++ " not word aligned!"
 makeJ op t = return $ JInstruction op ((t .&. 0x0FFFFFFF) `shiftR` 2)
+
+makeBranch op r1 r2 target currentAddr = 
+  let offset = (target - (currentAddr + 4)) `shiftR` 2 in
+  makeI op r1 r2 offset
 
 type ShiftAmount = Integer
 

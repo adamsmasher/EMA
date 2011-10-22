@@ -1,6 +1,9 @@
 module Ema where
 
-import Assembler (Bytecode, assemble, makeI, makeJ, makeR)
+
+import qualified Debug.Trace as Debug
+
+import Assembler (Bytecode, assemble, makeBranch, makeI, makeJ, makeR)
 import Eval (evalExpr)
 import Macro (expandMacros)
 import MIPSConst
@@ -66,9 +69,9 @@ assembleLine symbolTable (addr, l) = case l of
   CmdLine ".byte" bytes -> do bs <- sequence $ map (evalExpr symbolTable) bytes
                               return . (map fromIntegral) $ bs
   CmdLine ".half" halfs -> do hs <- sequence $ map (evalExpr symbolTable) halfs
-                              liftM concat . mapM (liftM reverse . w16) $ hs
+                              liftM concat . mapM w16 $ hs
   CmdLine ".word" words -> do ws <- sequence $ map (evalExpr symbolTable) words
-                              liftM concat . mapM (liftM reverse . w32) $ ws
+                              liftM concat . mapM w32 $ ws
   CmdLine ".ascii" ((Str s):[]) -> return $ map (fromIntegral . ord) s
   CmdLine ".asciiz"((Str s):[]) -> return $
     (map (fromIntegral . ord) s) ++ [(fromIntegral 0)]
@@ -106,42 +109,42 @@ toInstruction symbolTable addr l = case l of
   CmdLine "beq"    params -> case params of
     ((Register rs):(Register rt):off:[]) -> do
       n  <- eval off
-      makeI beqOp rs rt (n - (addr+4))
+      makeBranch beqOp rs rt n addr
     _ -> invalidArgs "beq"
   CmdLine "bgez"   params -> case params of
     ((Register rs):off:[]) -> do 
                      n  <- eval off
-                     makeI regimm rs bgezFunc (n - (addr+4))
+                     makeBranch regimm rs bgezFunc n addr
     _ -> invalidArgs "bgez"
   CmdLine "bgezal" params -> case params of
     ((Register rs):off:[]) -> do
                      n  <- eval off
-                     makeI regimm rs bgezalFunc (n - (addr+4))
+                     makeBranch regimm rs bgezalFunc n addr
     _ -> invalidArgs "bgezal"
   CmdLine "bgtz"   params -> case params of
     ((Register rs):off:[]) -> do
       n  <- eval off
-      makeI bgtzOp rs 0 (n - (addr+4))
+      makeBranch bgtzOp rs 0 n addr
     _ -> invalidArgs "bgtz"
   CmdLine "blez"   params -> case params of
     ((Register rs):off:[]) -> do
       n  <- eval off
-      makeI blezOp rs 0 (n - (addr+4))
+      makeBranch blezOp rs 0 n addr
     _ -> invalidArgs "blez"
   CmdLine "bltz"   params -> case params of
     ((Register rs):off:[]) -> do
       n  <- eval off
-      makeI regimm rs bltzFunc (n - (addr+4))
+      makeBranch regimm rs bltzFunc n addr
     _ -> invalidArgs "bltz"
   CmdLine "bltzal" params -> case params of
     ((Register rs):off:[]) -> do
       n  <- eval off
-      makeI regimm rs bltzalFunc (n - (addr+4))
+      makeBranch regimm rs bltzalFunc n addr
     _ -> invalidArgs "bltzal"
   CmdLine "bne"    params -> case params of
     ((Register rs):(Register rt):off:[]) -> do
       n  <- eval off
-      makeI bneOp rs rt (n - (addr+4))
+      makeBranch bneOp rs rt n addr
     _ -> invalidArgs "bne"
   CmdLine "div"    params -> case params of
     ((Register rs):(Register rt):[]) -> 
