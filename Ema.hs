@@ -1,8 +1,5 @@
 module Ema where
 
-
-import qualified Debug.Trace as Debug
-
 import Assembler (Bytecode, assemble, makeBranch, makeI, makeJ, makeR)
 import Eval (evalExpr)
 import Macro (expandMacros)
@@ -11,6 +8,7 @@ import Parser (Line(..), Expr(..), NumType(..), parseFile)
 import Pass2 (SymbolTable, buildSymbolTable)
 import Util (invalidArgs, w16, w32)
 
+import Control.Applicative ((<$>))
 import Control.Monad (liftM)
 import Data.ByteString (ByteString)
 import Data.Char (ord)
@@ -46,9 +44,9 @@ doInclude line = case line of
   CmdLine _ _            -> return [line]
 
 incBin :: String -> IO [Line]
-incBin file = ByteString.readFile file
-          >>= return . ((map makeByte) . ByteString.unpack)
-              where makeByte n = CmdLine ".byte" [Num Dec $ fromIntegral n]
+incBin file = do
+  bs <- ByteString.unpack <$> ByteString.readFile file
+  return [CmdLine ".byte" $ map (Num Dec . fromIntegral) bs]
 
 -- given the text of a file, assembleFile converts it to an
 -- assembled binary
