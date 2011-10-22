@@ -117,12 +117,16 @@ doLine (CmdLine ".padto" args) = do
   case args of
     ((Num _ n):(Num _ f):[]) -> do
       padding <- getAddr >>= return . (n-)
-      dummyBytes padding f
-      returnCurrentResults
+      case padding < 0 of
+        True -> fail "Pad destination preceeds section counter"
+        False -> do dummyBytes padding f
+                    returnCurrentResults
     ((Num _ n):[]) -> do
       padding <- getAddr >>= return . (n-)
-      dummyBytes padding 0xAA
-      returnCurrentResults
+      case padding < 0 of
+        True -> fail "Pad destination preceeds section counter"
+        False -> do dummyBytes padding 0xAA
+                    returnCurrentResults
     _              -> invalidArgs ".padto"
 doLine (CmdLine ".space" args) = do
   case args of
