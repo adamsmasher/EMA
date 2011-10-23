@@ -12,4 +12,4 @@ expand valid labels
 more string control chars
 coprocessor instructions
 repetition in defines
-line numbers and stuff when error reporting
+better error reporting, always and forever
