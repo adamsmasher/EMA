@@ -11,6 +11,9 @@ output formats. It does not use a linker and has no support for modules.
 It does not do any instruction reordering and will not automatically or
 intelligently fill delay slots. 
 
+EMA is GPL licensed. In the event that you find EMA useful for anything,
+please contribute at github.com/adamsmasher/EMA.
+
 USAGE:
 ema <source-file> <output-file>
 
