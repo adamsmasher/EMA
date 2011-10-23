@@ -1,6 +1,7 @@
 module Main where
 
-import Ema (AssemblyState(..), assembleFile, loadFile)
+import Ema (assembleFile, loadFile)
+import ErrorHandling (AssemblyState(..), AssemblyStateT(..))
 
 import qualified Data.ByteString as ByteString (writeFile)
 import System (getArgs)
@@ -14,12 +15,17 @@ usage = putStrLn "USAGE: ema <source-file> <output-file>"
 
 assembleToFile :: String -> String -> IO ()
 assembleToFile inFilename outFilename = do
-  src <- loadFile inFilename
-  bin <- catchParseError src
+  src <- catchErrorT $ loadFile inFilename
+  bin <- catchError  $ assembleFile src
   ByteString.writeFile outFilename bin
-  where catchParseError file = case assembleFile file of
-          Error err -> do putStrLn $ "Error assembling " ++ inFilename
-                          putStrLn err
-                          exitFailure
+  where catchError a = case a of
+          Error err lineNum -> do
+            putStrLn $ "Error assembling " ++ inFilename
+            case lineNum of
+              Just n  -> putStrLn $ "On line " ++ (show n)
+              Nothing -> return ()
+            putStrLn err
+            exitFailure
           OK bin    -> return bin
+        catchErrorT a = runAssembly a >>= catchError
 

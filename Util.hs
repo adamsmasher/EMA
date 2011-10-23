@@ -31,7 +31,3 @@ w32 n = do
   low  <- w8 $ n .&. 0x000000FF
   return $ reverse [high, m1, m2, low]
 
-doTimes :: (Monad m, Integral n) => n -> (n -> m b) -> m ()
-doTimes n f = forM_ [1..n] f
-
-invalidArgs s = fail $ "invalid arguments given for command " ++ s

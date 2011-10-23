@@ -1,27 +1,29 @@
-module Parser (Line(..), Expr(..), NumType(..), getOp, parseFile, regNum, 
-               symbolString) where
+module Parser (Line(..), LineType(..), Expr(..), NumType(..), getOp, parseFile, 
+               regNum, symbolString) where
 
 import Register (lookupRegisterName)
 import Util (readBin)
 
 import Control.Arrow ((>>>))
+import Control.Applicative ((<$>), (<*>))
 import Data.Bits ((.|.), (.&.), shiftL, shiftR, xor)
 import Data.Char(isSpace)
 import Data.Maybe (fromJust, maybeToList)
 import Numeric (readHex)
 import Text.Parsec.Error (Message(SysUnExpect, UnExpect, Expect, Message), 
                           errorPos, errorMessages)
-import Text.ParserCombinators.Parsec (Parser, ParseError, sourceColumn)
+import Text.ParserCombinators.Parsec (Parser, ParseError, sourceLine)
 import Text.ParserCombinators.Parsec.Char (alphaNum, char, digit, hexDigit,
                                            letter, newline, oneOf, satisfy,
                                            string)
 import Text.ParserCombinators.Parsec.Combinator (between, many1, option,
                                                  optionMaybe, sepBy)
-import Text.ParserCombinators.Parsec.Prim ((<|>), many, parse, try)
+import Text.ParserCombinators.Parsec.Prim ((<|>), getPosition, many, parse, try)
 
 ------ types -------------------------------------------------
 
-data Line = Label String | CmdLine String [Expr] deriving (Show, Eq)
+data Line = Line LineType Int deriving (Show, Eq)
+data LineType = Label String | CmdLine String [Expr] deriving (Show, Eq)
 data Expr = Str String
           | Symbol String
           | Register Integer
@@ -84,13 +86,15 @@ label :: Parser Line
 label = do first <- letter <|> char '_'
            restLabel <- many (alphaNum <|> char '_')
            char ':'
-           return $ Label (first:restLabel)
+           lineNum <- sourceLine <$> getPosition
+           return $ Line (Label (first:restLabel)) lineNum 
 
 cmdline :: Parser Line
 cmdline = do cmd <- symbol
              whitespaces
              args <- argList
-             return $ CmdLine (fromJust $ symbolString cmd) args
+             lineNum <- sourceLine <$> getPosition
+             return $ Line (CmdLine (fromJust $ symbolString cmd) args) lineNum
 
 argList :: Parser [Expr]
 argList = arg `sepBy` (char ',' >> whitespaces)
